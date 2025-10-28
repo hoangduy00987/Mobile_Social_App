@@ -1,0 +1,202 @@
+import { useState, useRef, useCallback } from 'react'
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+  TouchableOpacity,
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AntDesign, MaterialIcons, Entypo } from '@expo/vector-icons'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { router, Stack, useLocalSearchParams } from 'expo-router'
+
+import CommentListItem from '../../../components/CommentListItem'
+import PostListItem from '../../../components/PostListItem'
+import { deletePostById, fetchPostById } from '../../../services/postService'
+import { fetchComments, insertComment } from '../../../services/commentsService'
+
+import { useAuth, useSession } from '@clerk/clerk-expo'
+
+export default function DetailedPost() {
+  const { id } = useLocalSearchParams<{ id: string }>()
+  const [comment, setComment] = useState<string>('')
+  // const [isInputFocused, setIsInputFocused] = useState<boolean>(false)
+  const [replyToId, setReplyToId] = useState<number | undefined>(undefined)
+
+  // const inputRef = useRef<TextInput | null>(null)
+
+  const insets = useSafeAreaInsets()
+  const { session } = useSession()
+
+  const queryClient = useQueryClient()
+  const { getToken } = useAuth()
+
+  const {
+    data: post,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['posts', id],
+    queryFn: () => fetchPostById(parseInt(id)),
+  })
+
+  const { data: comments } = useQuery({
+    queryKey: ['comments', { postId: id }],
+    queryFn: () => fetchComments(parseInt(id)),
+  })
+
+  const { mutate: remove } = useMutation({
+    mutationFn: () => deletePostById(parseInt(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
+      router.back()
+    },
+    onError: (error) => {
+      Alert.alert('Error', error.message)
+    },
+  })
+
+  const { mutate: createComment } = useMutation({
+    mutationFn: () =>
+      insertComment({ post_id: parseInt(id), content: comment, parent_id: replyToId }, getToken),
+    onSuccess: (data) => {
+      setComment('')
+      setReplyToId(undefined)
+      queryClient.invalidateQueries({ queryKey: ['comments', { postId: id }] })
+      queryClient.invalidateQueries({
+        queryKey: ['comments', { parentId: replyToId }],
+      })
+    },
+  })
+
+  // const onTextInputBlur = useCallback(() => {
+  //   setReplyToId(undefined)
+  //   setIsInputFocused(false)
+  // }, [])
+
+  if (isLoading) {
+    return <ActivityIndicator />
+  }
+
+  if (error || !post) {
+    return <Text>Post Not Found</Text>
+  }
+
+  const handleReplyButtonPressed = useCallback((commentId: number, content: string) => {
+    // setReplyToId(commentId)
+    // inputRef.current?.focus()
+    setReplyToId(undefined)
+    router.push({
+      pathname: '/post/comment',
+      params: { id: post.id, title: content, parent_id: commentId },
+    })
+  }, [])
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={insets.top + 10}
+    >
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {session?.user.id === post.author_id.toString() && (
+                <Entypo onPress={() => remove()} name="trash" size={24} color="white" />
+              )}
+
+              <AntDesign name="search" size={24} color="white" />
+              <MaterialIcons name="sort" size={27} color="white" />
+              <Entypo name="dots-three-horizontal" size={24} color="white" />
+            </View>
+          ),
+          animation: 'slide_from_bottom',
+        }}
+      />
+
+      <FlatList
+        data={comments}
+        renderItem={({ item }) => (
+          <CommentListItem
+            comment={item}
+            depth={0}
+            isReplied={item.id === replyToId}
+            handleReplyButtonPressed={handleReplyButtonPressed}
+          />
+        )}
+        ListHeaderComponent={<PostListItem post={post} isDetailedPost />}
+      />
+      <View
+        style={{
+          paddingBottom: insets.bottom,
+          borderBottomColor: 'lightgray',
+          paddingVertical: 5,
+          paddingHorizontal: 10,
+          backgroundColor: 'white',
+          borderRadius: 10,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: -3,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+          elevation: 4,
+        }}
+      >
+        {/* <TextInput
+          ref={inputRef}
+          placeholder="Join the conversation"
+          style={{ backgroundColor: '#E4E4E4', padding: 5, borderRadius: 5 }}
+          value={comment}
+          onChangeText={(text) => setComment(text)}
+          multiline
+          onFocus={() => router.push('/post/comment')}
+          onBlur={onTextInputBlur}
+        /> */}
+        <TouchableOpacity
+          style={{ backgroundColor: '#E4E4E4', padding: 10, borderRadius: 5 }}
+          onPress={() => {
+            setReplyToId(undefined)
+            router.push({
+              pathname: '/post/comment',
+              params: { id: post.id, title: post.title },
+            })
+          }}
+        >
+          <Text>Join the conversation</Text>
+        </TouchableOpacity>
+        {/* {isInputFocused && (
+          <Pressable
+            onPress={() => createComment()}
+            style={{
+              backgroundColor: '#0d469b',
+              borderRadius: 15,
+              marginLeft: 'auto',
+              marginTop: 15,
+            }}
+          >
+            <Text
+              style={{
+                color: 'white',
+                paddingVertical: 5,
+                paddingHorizontal: 10,
+                fontWeight: 'bold',
+                fontSize: 13,
+              }}
+            >
+              {replyToId ? 'Reply' : 'Send'}
+            </Text>
+          </Pressable>
+        )} */}
+      </View>
+    </KeyboardAvoidingView>
+  )
+}
