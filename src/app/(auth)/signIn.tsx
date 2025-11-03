@@ -11,11 +11,12 @@ import {
 } from 'react-native'
 import React from 'react'
 import GoogleSignIn from '../../components/GoogleSignIn'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Page() {
   const { signIn, setActive, isLoaded } = useSignIn()
   const router = useRouter()
-
+  const { setAuthUser } = useAuth();
   const [emailAddress, setEmailAddress] = React.useState('')
   const [password, setPassword] = React.useState('')
 
@@ -29,7 +30,11 @@ export default function Page() {
         identifier: emailAddress,
         password,
       })
-
+      setAuthUser({
+        user_id: 1,
+        email: emailAddress,
+        avatar: ''
+      })
       // If sign-in process is complete, set the created session as active
       // and redirect the user
       if (signInAttempt.status === 'complete') {

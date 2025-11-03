@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { useOAuth, useSSO } from '@clerk/clerk-expo'
 import { useWarmUpBrowser } from '../hooks/useWarmUpBrowser'
+import { useAuth } from '../contexts/AuthContext'
 
 // Handle any pending authentication sessions
 WebBrowser.maybeCompleteAuthSession()
@@ -19,7 +20,7 @@ export default function GoogleSignIn() {
     redirectUrl: Linking.createURL('/'),
   })
   const router = useRouter()
-
+  const { setAuthUser } = useAuth();
   const onGoogleSignInPress = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -45,7 +46,12 @@ export default function GoogleSignIn() {
         //     }
         //   },
         // })
-        setActive!({ session: createdSessionId })
+        setActive!({ session: createdSessionId });
+        setAuthUser({
+          user_id: 1,
+          email: 'nth0326zz@gmail.com',
+          avatar: ''
+        })
         router.replace('/')
       } else {
         setError('Google sign in incomplete. Please try again!')

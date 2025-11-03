@@ -1,8 +1,12 @@
 import { tokenCache } from '../../cache'
 import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo'
-import { Slot } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useReactQueryDevTools } from '@dev-plugins/react-query'
+import { Drawer } from 'expo-router/drawer'
+import { Slot } from 'expo-router'
+import CustomDrawer from '../components/CustomDrawer'
+import { AuthProvider } from '../contexts/AuthContext'
+import { CommunityProvider } from '../contexts/CommunityContext'
 
 const queryClient = new QueryClient()
 
@@ -19,7 +23,20 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
         <ClerkLoaded>
-          <Slot />
+          <AuthProvider>
+            <CommunityProvider>
+              <Drawer
+                drawerContent={(props) => <CustomDrawer {...props} />}
+                screenOptions={{
+                  drawerType: 'slide',
+                  drawerActiveTintColor: '#FF5700',
+                  headerShown: false
+                }}
+              >
+                <Slot />
+              </Drawer>              
+            </CommunityProvider>
+          </AuthProvider>
         </ClerkLoaded>
       </ClerkProvider>
     </QueryClientProvider>
