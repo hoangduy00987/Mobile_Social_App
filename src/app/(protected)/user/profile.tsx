@@ -1,13 +1,16 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { useSession } from '@clerk/clerk-expo'
+import { useAuth, useSession } from '@clerk/clerk-expo'
+import { useAuth as useAuthContext } from "../../../contexts/AuthContext"; 
 
 type TabType = 'Posts' | 'Comments' | 'About'
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<TabType>('Posts')
   const { session } = useSession()
+  const { signOut } = useAuth();
+  const { setAuthUser } = useAuthContext();
 
   const tabs: TabType[] = ['Posts', 'Comments', 'About']
 
@@ -32,6 +35,11 @@ export default function Profile() {
     </View>
   )
 
+  const handleLogout = async () => {
+    await signOut();
+    setAuthUser(null);
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -45,7 +53,7 @@ export default function Profile() {
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
                 <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarEmoji}>🤖</Text>
+                  <Text style={styles.avatarEmoji} onPress={() => handleLogout()}>🤖</Text>
                 </View>
               </View>
             </View>

@@ -10,11 +10,12 @@ import {
 } from 'react-native'
 import { useSignUp } from '@clerk/clerk-expo'
 import { useRouter } from 'expo-router'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp()
   const router = useRouter()
-
+  const { setAuthUser } = useAuth();
   const [emailAddress, setEmailAddress] = React.useState('')
   const [username, setUsername] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -32,7 +33,11 @@ export default function SignUpScreen() {
         username,
         password,
       })
-
+      setAuthUser({
+        user_id: 1,
+        email: emailAddress,
+        avatar: ''
+      })
       // Send user an email with verification code
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
 
