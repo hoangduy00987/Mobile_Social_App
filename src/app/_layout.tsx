@@ -7,6 +7,8 @@ import { Slot } from 'expo-router'
 import CustomDrawer from '../components/CustomDrawer'
 import { AuthProvider } from '../contexts/AuthContext'
 import { CommunityProvider } from '../contexts/CommunityContext'
+import Toast from 'react-native-toast-message'
+import { toastConfig } from '../utils/toastConfig'
 
 const queryClient = new QueryClient()
 
@@ -34,7 +36,8 @@ export default function RootLayout() {
                 }}
               >
                 <Slot />
-              </Drawer>              
+              </Drawer>          
+              <Toast config={toastConfig} />    
             </CommunityProvider>
           </AuthProvider>
         </ClerkLoaded>

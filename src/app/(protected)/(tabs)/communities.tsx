@@ -3,6 +3,7 @@ import { AntDesign, Ionicons } from '@expo/vector-icons'
 import { useEffect, useState } from 'react'
 import axios from 'axios';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 interface Community {
   community_id: number
@@ -17,10 +18,13 @@ interface Community {
   status: string
 }
 
+const sleep = (ms: any) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default function CommunitiesScreen() {
   const [community, setCommunity] = useState<Community[]>([]);
   const [searchCommunity, setSearchCommunity] = useState('');
   const { authUser } = useAuth();
+  const router = useRouter();
 
   const fetchDataCommunity = async () => {
     if (!authUser?.user_id) return;
@@ -62,6 +66,71 @@ export default function CommunitiesScreen() {
     }
   };
 
+  const searchData = async () => {
+    try {
+      await sleep(500);
+
+      if (!searchCommunity.trim()) {
+        fetchDataCommunity();
+        return;
+      }
+
+      if (!authUser?.user_id) return;
+
+      const [searchResponse, joinedResponse] = await Promise.all([
+        axios.get(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community/search?q=${searchCommunity}`),
+        axios.get(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community/joined-community/${authUser.user_id}`)
+      ]);
+
+      const joinedList = joinedResponse.data.map((item: any) => ({
+        community_id: item.community_id,
+        status: item.status ?? "APPROVED"
+      }));
+
+      const formattedData: Community[] = searchResponse.data.map((item: any) => {
+        const joined = joinedList.find((j: any) => j.community_id === item.community_id);
+
+        return {
+          community_id: item.community_id,
+          name: item.name,
+          members: item.members ?? "0",
+          avatar: item.avatar ?? "",
+          created_by: item.created_by,
+          type_id: item.type_id,
+          created_at: item.created_at ?? '',
+          updated_at: item.updated_at ?? '',
+          type: item.type,
+          status: joined ? joined.status : ""
+        };
+      });
+
+      setCommunity(formattedData);
+
+    } catch (error) {
+      console.log(">>> Search Error:", error);
+    }
+  };
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const controller = new AbortController();
+
+    const runSearch = async () => {
+      await sleep(500);
+      if (!isCancelled) {
+        await searchData();
+      }
+    };
+
+    runSearch();
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+    };
+  }, [searchCommunity]);
+
   useEffect(() => {
     fetchDataCommunity();
   }, []);
@@ -84,7 +153,21 @@ export default function CommunitiesScreen() {
   };
 
   const renderCommunityCard = (community: Community) => (
-    <View key={community.community_id} style={styles.communityCard}>
+    <TouchableOpacity
+      key={community.community_id}
+      style={styles.communityCard}
+      onPress={() => {
+        if (community.type === 'Private' && (community.status === 'PENDING' || community.status === '')) return;
+        router.push({
+          pathname: '/(community)/community',
+          params: { 
+            name: community.name,
+            community_id: community.community_id,
+            created_by: community.created_by
+          }
+        })
+      }}
+    >
       <View style={styles.communityHeader}>
         <View style={[styles.communityIcon]}>
         <Image
@@ -131,7 +214,7 @@ export default function CommunitiesScreen() {
         </TouchableOpacity>
       </View>
       {/* <Text style={styles.communityDescription}>{community.description}</Text> */}
-    </View>
+    </TouchableOpacity>
   )
 
   return (
@@ -166,12 +249,12 @@ export default function CommunitiesScreen() {
           <TextInput
             style={{ flex: 1, fontSize: 16, paddingVertical: 10 }}
             value={searchCommunity}
-            onChangeText={setSearchCommunity}
+            onChangeText={(text) => setSearchCommunity(text)}
             placeholder="community-name"
             autoCapitalize="none"
           />
         </View>
-        <Text style={styles.sectionTitle}>Recommended for you</Text>
+        <Text style={styles.sectionTitle}>{searchCommunity ? `Result search for ${searchCommunity}` : 'Recommended for you'}</Text>
         {community.map(renderCommunityCard)}
       </View>
 

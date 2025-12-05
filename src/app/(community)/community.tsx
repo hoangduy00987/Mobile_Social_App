@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { showSuccess } from '../../utils/toastMessage';
 
 type Community = {
     community_id: number
@@ -86,6 +87,55 @@ const CommunityScreen = () => {
         return `Created ${month} ${day}, ${year}`;
     };
 
+    const RemoveMember = async (community_id: number, user_id: number) => {
+        try {
+            await axios.delete(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community-member/${community_id}/reject-member/${user_id}`);
+            showSuccess('Delete successful', 'User has been removed from the community');
+            fetchMemberCommunity();
+            fetchMemberPendingCommunity();
+        } catch(error: any) {
+            console.log(">>> Error: ", error);
+        }
+    }
+
+    const ApproveMember = async (community_id: number, user_id: number) => {
+        try {
+            await axios.patch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community-member/${community_id}/approve-member/${user_id}`);
+            showSuccess('Approve successful', 'User has been accepted into the community');
+            fetchMemberCommunity();
+            fetchMemberPendingCommunity();
+        } catch(error: any) {
+            console.log(">>> Error: ", error);
+        }
+    }
+
+    const handleRemoveMember = (community_id: number, user_id: number) => {
+        Alert.alert('Submit', 'Do you want to remove this user from the community?', [
+            {text: 'Cancel', style: 'cancel'},
+            {text: 'Submit', onPress: () => {
+                RemoveMember(community_id, user_id);
+            }, style: 'destructive'},
+        ]);
+    }
+
+    const handleDeclineMember = (community_id: number, user_id: number) => {
+        Alert.alert('Submit', 'Do you want to decline this request?', [
+            {text: 'Cancel', style: 'cancel'},
+            {text: 'Submit', onPress: () => {
+                RemoveMember(community_id, user_id);
+            }, style: 'destructive'},
+        ]);
+    }
+
+    const handleApproveMember = (community_id: number, user_id: number) => {
+        Alert.alert('Submit', 'Are you sure you want to add this person to the community?', [
+            {text: 'Cancel', style: 'cancel'},
+            {text: 'Submit', onPress: () => {
+                ApproveMember(community_id, user_id);
+            }, style: 'destructive'},
+        ]);
+    }
+
     const PanelContent = () => (
         <View style={styles.containerPanel}>
             <TouchableOpacity
@@ -115,7 +165,7 @@ const CommunityScreen = () => {
                         </View>
 
                         {item?.user_id !== authUser?.user_id && (
-                            <TouchableOpacity style={styles.btnDeleMem}>
+                            <TouchableOpacity style={styles.btnDeleMem} onPress={() => handleRemoveMember(item?.community_id, item?.user_id)}>
                                 <AntDesign name="close-circle" size={20} color="black" />
                             </TouchableOpacity>                         
                         )}
@@ -137,10 +187,10 @@ const CommunityScreen = () => {
                         </View>
 
                         <View style={{ marginLeft: 'auto', flexDirection: 'row', gap: 5 }}>
-                            <TouchableOpacity style={styles.btnDeleMem}>
+                            <TouchableOpacity style={styles.btnDeleMem} onPress={() => handleDeclineMember(item?.community_id, item?.user_id)}>
                                 <AntDesign name="close-circle" size={20} color="black" />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.btnDeleMem}>
+                            <TouchableOpacity style={styles.btnDeleMem} onPress={() => handleApproveMember(item?.community_id, item?.user_id)}>
                                 <AntDesign name="check-circle" size={20} color="black" />
                             </TouchableOpacity>                        
                         </View>  

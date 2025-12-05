@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-nativ
 import { AntDesign, Feather, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
+import { showSuccess } from '../../utils/toastMessage';
 
 type DataType = {
   type_id: number;
@@ -41,13 +42,19 @@ const CommunityTypeScreen = () => {
 
   const handleCreateCommunity = async () => {
     try {
-      await axios.post(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community`, {
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community`, {
         name: communityName,
         type_id: selected,
         created_by: 1
       });
+      const community_id = response?.data?.community_id;
+      showSuccess('Created successfully', 'Explore and post in new communities now!');
       setCommunityName('');
       setSelected(1);
+      router.push({
+        pathname: '/(community)/community',
+        params: { name: communityName, community_id: community_id, created_by: 1 }
+      })
     } catch(error: any) {
       console.log(">>> Error: ", error);
     }
