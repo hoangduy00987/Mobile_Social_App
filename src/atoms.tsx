@@ -1,6 +1,4 @@
-import { atom } from "jotai";
-import { Tables } from "./types/database.types";
+import { atom } from 'jotai'
+import { Community } from './types'
 
-type Group = Tables<"groups">;
-
-export const selectedGroupAtom = atom<Group | null>(null);
+export const selectedCommunityAtom = atom<Community | null>(null)

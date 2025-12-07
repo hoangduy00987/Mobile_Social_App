@@ -8,72 +8,53 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native'
-import { useSignUp } from '@clerk/clerk-expo'
 import { useRouter } from 'expo-router'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function SignUpScreen() {
-  const { isLoaded, signUp, setActive } = useSignUp()
   const router = useRouter()
-  const { setAuthUser } = useAuth();
+  const { signUp, fetchUserProfile } = useAuth()
   const [emailAddress, setEmailAddress] = React.useState('')
   const [username, setUsername] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [isLoading, setIsLoading] = React.useState(false)
   const [pendingVerification, setPendingVerification] = React.useState(false)
   const [code, setCode] = React.useState('')
 
   // Handle submission of sign-up form
   const onSignUpPress = async () => {
-    if (!isLoaded) return
+    if (!isLoading) return
 
     // Start sign-up process using email and password provided
     try {
-      await signUp.create({
-        emailAddress,
-        username,
-        password,
-      })
-      setAuthUser({
-        user_id: 1,
+      signUp({
         email: emailAddress,
-        avatar: ''
+        password,
+        full_name: username,
+      }).then(async () => {
+        await fetchUserProfile()
       })
       // Send user an email with verification code
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
 
       // Set 'pendingVerification' to true to display second form
       // and capture OTP code
       setPendingVerification(true)
     } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
       console.log(JSON.stringify(err, null, 2))
+    } finally {
+      setIsLoading(false)
     }
   }
 
   // Handle submission of verification form
   const onVerifyPress = async () => {
-    if (!isLoaded) return
+    if (!isLoading) return
 
     try {
-      // Use the code the user provided to attempt verification
-      const signUpAttempt = await signUp.attemptEmailAddressVerification({
-        code,
-      })
-
       // If verification was completed, set the session to active
       // and redirect the user
-      if (signUpAttempt.status === 'complete') {
-        await setActive({ session: signUpAttempt.createdSessionId })
-        router.replace('/')
-      } else {
-        // If the status is not complete, check why. User may need to
-        // complete further steps.
-        console.log(JSON.stringify(signUpAttempt, null, 2))
-      }
+      router.replace('/')
     } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
       console.log(JSON.stringify(err, null, 2))
     }
   }

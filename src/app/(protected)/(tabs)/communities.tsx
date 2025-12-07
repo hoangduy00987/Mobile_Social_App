@@ -1,9 +1,23 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, TextInput } from 'react-native'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TextInput,
+} from 'react-native'
 import { AntDesign, Ionicons } from '@expo/vector-icons'
 import { useEffect, useState } from 'react'
-import axios from 'axios';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useRouter } from 'expo-router';
+import { useAuth } from '../../../contexts/AuthContext'
+import { useRouter } from 'expo-router'
+import {
+  getCommunities,
+  getMyJoinedCommunities,
+  joinCommunity,
+  searchCommunities,
+} from '../../../apis/communityService'
+import { fetchPosts } from '../../../apis/postService'
 
 interface Community {
   community_id: number
@@ -18,173 +32,178 @@ interface Community {
   status: string
 }
 
-const sleep = (ms: any) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: any) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export default function CommunitiesScreen() {
-  const [community, setCommunity] = useState<Community[]>([]);
-  const [searchCommunity, setSearchCommunity] = useState('');
-  const { authUser } = useAuth();
-  const router = useRouter();
+  const [community, setCommunity] = useState<Community[]>([])
+  const [searchCommunity, setSearchCommunity] = useState('')
+  const { authUser } = useAuth()
+  const router = useRouter()
 
   const fetchDataCommunity = async () => {
-    if (!authUser?.user_id) return;
+    if (!authUser?.id) return
 
     try {
-      const [allResponse, joinedResponse] = await Promise.all([
-        axios.get(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community`),
-        axios.get(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community/joined-community/${authUser.user_id}`)
-      ]);
+      const [allResponse, joinedResponse, postsResponse] = await Promise.all([
+        getCommunities(),
+        getMyJoinedCommunities(authUser.id),
+        fetchPosts({ limit: 10, offset: 0 }),
+      ])
 
-      const joinedList = joinedResponse.data.map((item: any) => ({
+      console.log('Posts:', postsResponse)
+
+      const joinedList = joinedResponse.map((item: any) => ({
         community_id: item.community_id,
-        status: item.status ?? "APPROVED"
-      }));
+        status: item.status ?? 'APPROVED',
+      }))
 
-      const formattedData: Community[] = allResponse.data.map((item: any) => {
-        const joined = joinedList.find((j: any) => j.community_id === item.community_id);
+      const formattedData: Community[] = allResponse.map((item: any) => {
+        const joined = joinedList.find((j: any) => j.community_id === item.community_id)
 
         return {
           community_id: item.community_id,
           name: item.name,
-          members: item._count.members ?? "0",
-          avatar: item.avatar ?? "",
+          members: item._count?.members ?? '0',
+          avatar: item.avatar ?? '',
           created_by: item.created_by,
           type_id: item.type_id,
           created_at: new Date(item.created_at).toISOString(),
           updated_at: new Date(item.updated_at).toISOString(),
           type: item.communityType.type,
-          status: joined ? joined.status : ''
-        };
-      });
+          status: joined ? joined.status : '',
+        }
+      })
 
       // console.log(">>> Check: ", formattedData);
 
-      setCommunity(formattedData);
-
+      setCommunity(formattedData)
     } catch (error) {
-      console.error(">>> Error fetch communities: ", error);
+      console.log('>>> Error fetch communities: ', error)
     }
-  };
+  }
 
   const searchData = async () => {
     try {
-      await sleep(500);
+      await sleep(500)
 
       if (!searchCommunity.trim()) {
-        fetchDataCommunity();
-        return;
+        fetchDataCommunity()
+        return
       }
 
-      if (!authUser?.user_id) return;
+      if (!authUser?.id) return
 
       const [searchResponse, joinedResponse] = await Promise.all([
-        axios.get(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community/search?q=${searchCommunity}`),
-        axios.get(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community/joined-community/${authUser.user_id}`)
-      ]);
+        searchCommunities(searchCommunity),
+        getMyJoinedCommunities(authUser.id),
+      ])
 
-      const joinedList = joinedResponse.data.map((item: any) => ({
+      const joinedList = joinedResponse.map((item: any) => ({
         community_id: item.community_id,
-        status: item.status ?? "APPROVED"
-      }));
+        status: item.status ?? 'APPROVED',
+      }))
 
-      const formattedData: Community[] = searchResponse.data.map((item: any) => {
-        const joined = joinedList.find((j: any) => j.community_id === item.community_id);
+      const formattedData: Community[] = searchResponse.map((item: any) => {
+        const joined = joinedList.find((j: any) => j.community_id === item.community_id)
 
         return {
           community_id: item.community_id,
           name: item.name,
-          members: item.members ?? "0",
-          avatar: item.avatar ?? "",
+          members: item.members ?? '0',
+          avatar: item.avatar ?? '',
           created_by: item.created_by,
           type_id: item.type_id,
           created_at: item.created_at ?? '',
           updated_at: item.updated_at ?? '',
           type: item.type,
-          status: joined ? joined.status : ""
-        };
-      });
+          status: joined ? joined.status : '',
+        }
+      })
 
-      setCommunity(formattedData);
-
+      setCommunity(formattedData)
     } catch (error) {
-      console.log(">>> Search Error:", error);
+      console.log('>>> Search Error:', error)
     }
-  };
+  }
 
   useEffect(() => {
-    let isCancelled = false;
+    let isCancelled = false
 
-    const controller = new AbortController();
+    const controller = new AbortController()
 
     const runSearch = async () => {
-      await sleep(500);
+      await sleep(500)
       if (!isCancelled) {
-        await searchData();
+        await searchData()
       }
-    };
+    }
 
-    runSearch();
+    runSearch()
 
     return () => {
-      isCancelled = true;
-      controller.abort();
-    };
-  }, [searchCommunity]);
+      isCancelled = true
+      controller.abort()
+    }
+  }, [searchCommunity])
 
   useEffect(() => {
-    fetchDataCommunity();
-  }, []);
+    fetchDataCommunity()
+  }, [])
 
   const handleJoinCommunity = async (community_id: number, type: string) => {
-    const status = type === 'Private' ? 'PENDING' : 'APPROVED';
-    
-    try {
-      await axios.post(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/community-member`, {
-        community_id,
-        user_id: authUser?.user_id,
-        role: 'member',
-        status,
-      });
+    const status = type === 'Private' ? 'PENDING' : 'APPROVED'
 
-      fetchDataCommunity();
+    try {
+      await joinCommunity({ community_id, user_id: authUser?.id || 0, role: 'member', status })
+
+      fetchDataCommunity()
     } catch (error: any) {
-      console.log(">>> Error:", error);
+      console.log('>>> Error:', error)
     }
-  };
+  }
 
   const renderCommunityCard = (community: Community) => (
     <TouchableOpacity
       key={community.community_id}
       style={styles.communityCard}
       onPress={() => {
-        if (community.type === 'Private' && (community.status === 'PENDING' || community.status === '')) return;
+        if (
+          community.type === 'Private' &&
+          (community.status === 'PENDING' || community.status === '')
+        )
+          return
         router.push({
           pathname: '/(community)/community',
-          params: { 
+          params: {
             name: community.name,
             community_id: community.community_id,
-            created_by: community.created_by
-          }
+            created_by: community.created_by,
+          },
         })
       }}
     >
       <View style={styles.communityHeader}>
         <View style={[styles.communityIcon]}>
-        <Image
-          source={
-            community.avatar && community.avatar !== ""
-              ? { uri: community.avatar }
-              : require('../../../../assets/header.png')
-          }
-          style={{ width: 40, height: 40, borderRadius: '50%' }}
-        />
+          <Image
+            source={
+              community.avatar && community.avatar !== ''
+                ? { uri: community.avatar }
+                : require('../../../../assets/header.png')
+            }
+            style={{ width: 40, height: 40, borderRadius: 20 }}
+          />
         </View>
         <View style={styles.communityInfo}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Text style={styles.communityName}>r/{community.name}</Text>
             {community.type === 'Private' && (
-              <AntDesign name="lock" size={14} color="black" style={{ transform: [{ translateY: -2 }] }} />                 
-            )} 
+              <AntDesign
+                name="lock"
+                size={14}
+                color="black"
+                style={{ transform: [{ translateY: -2 }] }}
+              />
+            )}
           </View>
 
           <Text style={styles.communityMembers}>{community.members} members</Text>
@@ -192,24 +211,24 @@ export default function CommunitiesScreen() {
         <TouchableOpacity
           style={[
             styles.joinButton,
-            community.status === "APPROVED" && styles.approvedButton,
-            community.status === "PENDING" && styles.pendingButton,
+            community.status === 'APPROVED' && styles.approvedButton,
+            community.status === 'PENDING' && styles.pendingButton,
           ]}
-          disabled={community.status === "APPROVED" || community.status === "PENDING"}
+          disabled={community.status === 'APPROVED' || community.status === 'PENDING'}
           onPress={() => handleJoinCommunity(community.community_id, community.type)}
         >
           <Text
             style={[
               styles.joinButtonText,
-              community.status === "APPROVED" && styles.approvedText,
-              community.status === "PENDING" && styles.pendingText,
+              community.status === 'APPROVED' && styles.approvedText,
+              community.status === 'PENDING' && styles.pendingText,
             ]}
           >
-            {community.status === "PENDING"
-              ? "Pending"
-              : community.status === "APPROVED"
-              ? "Joined"
-              : "Join"}
+            {community.status === 'PENDING'
+              ? 'Pending'
+              : community.status === 'APPROVED'
+              ? 'Joined'
+              : 'Join'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -236,16 +255,16 @@ export default function CommunitiesScreen() {
         <Text style={styles.sectionTitle}>Search for Community</Text>
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "center",
+            flexDirection: 'row',
+            alignItems: 'center',
             borderWidth: 1,
             borderRadius: 8,
             paddingHorizontal: 10,
             marginBottom: 30,
-            borderColor: '#CCC'
+            borderColor: '#CCC',
           }}
         >
-          <Text style={{ fontSize: 16, color: "#000" }}>r/</Text>
+          <Text style={{ fontSize: 16, color: '#000' }}>r/</Text>
           <TextInput
             style={{ flex: 1, fontSize: 16, paddingVertical: 10 }}
             value={searchCommunity}
@@ -254,7 +273,9 @@ export default function CommunitiesScreen() {
             autoCapitalize="none"
           />
         </View>
-        <Text style={styles.sectionTitle}>{searchCommunity ? `Result search for ${searchCommunity}` : 'Recommended for you'}</Text>
+        <Text style={styles.sectionTitle}>
+          {searchCommunity ? `Result search for ${searchCommunity}` : 'Recommended for you'}
+        </Text>
         {community.map(renderCommunityCard)}
       </View>
 
@@ -356,11 +377,11 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   joinButton: {
-    backgroundColor: "#579eebff",
+    backgroundColor: '#579eebff',
     paddingHorizontal: 24,
     paddingVertical: 8,
     borderRadius: 20,
-    alignItems: "center",
+    alignItems: 'center',
   },
 
   approvedButton: {
@@ -377,16 +398,16 @@ const styles = StyleSheet.create({
 
   joinButtonText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#FFF",
+    fontWeight: '600',
+    color: '#FFF',
   },
 
   approvedText: {
-    color: "#a19898ff",
+    color: '#a19898ff',
   },
 
   pendingText: {
-    color: "#a19898ff",
+    color: '#a19898ff',
   },
   communityDescription: {
     fontSize: 14,
@@ -398,7 +419,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#CCC",
+    borderColor: '#CCC',
     borderRadius: 8,
     padding: 12,
     fontSize: 14,

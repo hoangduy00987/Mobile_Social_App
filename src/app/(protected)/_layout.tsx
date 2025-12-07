@@ -1,7 +1,7 @@
 import { Redirect, Stack, router } from 'expo-router'
-import { useAuth } from '@clerk/clerk-expo'
 import { View } from 'react-native'
 import { AntDesign, MaterialIcons, Entypo } from '@expo/vector-icons'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function AppLayout() {
   const { isSignedIn } = useAuth()
@@ -13,8 +13,8 @@ export default function AppLayout() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="groupSelector" options={{ headerShown: false }} />
-      <Stack.Screen
+      <Stack.Screen name="communitySelector" options={{ headerShown: false }} />
+      {/* <Stack.Screen
         name="post/[id]"
         options={{
           headerTitle: '',
@@ -31,7 +31,7 @@ export default function AppLayout() {
           ),
           animation: 'slide_from_bottom',
         }}
-      />
+      /> */}
       <Stack.Screen
         name="post/comment"
         options={{

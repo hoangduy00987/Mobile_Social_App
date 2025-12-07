@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import AIChatWidget from '../../../components/AIChatWidget'
 
 type TabType = 'Messages' | 'Unread' | 'Requests' | 'Threads'
 
@@ -46,9 +47,11 @@ export default function ChatScreen() {
       </ScrollView>
 
       {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}>
+      {/* <TouchableOpacity style={styles.fab}>
         <Ionicons name="add" size={28} color="#FFFFFF" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
+
+      <AIChatWidget />
     </View>
   )
 }

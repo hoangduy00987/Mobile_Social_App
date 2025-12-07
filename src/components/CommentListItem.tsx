@@ -3,12 +3,10 @@ import { Entypo, Octicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { formatDistanceToNowStrict } from 'date-fns'
 import { useState, memo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteComment, fetchCommentReplies } from '../services/commentsService'
-import { createUpvote, selectMyVote } from '../services/upvotesService'
-import { useSupabase } from '../lib/supabase'
+import { deleteComment, fetchCommentReplies, createUpvote, selectMyVote } from '../apis/postService'
 // import { Tables } from '../types/database.types'
-import { useAuth, useSession } from '@clerk/clerk-expo'
 import { Comment } from '../types'
+import { useAuth } from '../contexts/AuthContext'
 
 // type Comment = Tables<"comments">;
 
@@ -27,11 +25,8 @@ const CommentListItem = ({
 }: CommentListItemProps) => {
   const [isShowReplies, setIsShowReplies] = useState<boolean>(false)
 
-  const { session } = useSession()
-
-  const supabase = useSupabase()
   const queryClient = useQueryClient()
-  const { getToken } = useAuth()
+  const { authUser } = useAuth()
 
   const { data: replies } = useQuery({
     queryKey: ['comments', { parentId: comment.id }],
@@ -39,7 +34,7 @@ const CommentListItem = ({
   })
 
   const { mutate: removeComment } = useMutation({
-    mutationFn: () => deleteComment(comment.id, getToken),
+    mutationFn: () => deleteComment(comment.id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['comments', { postId: comment.post_id }],
@@ -51,7 +46,8 @@ const CommentListItem = ({
   })
 
   const { mutate: upvote } = useMutation({
-    mutationFn: (value: 1 | -1) => createUpvote(comment.post_id, comment.id, value, getToken),
+    mutationFn: (value: 1 | -1) =>
+      createUpvote({ post_id: comment.post_id, comment_id: comment.id, vote_type: value }),
     // Optimistic update
     onMutate: async (newValue) => {
       // Cancel any outgoing refetches
@@ -95,7 +91,7 @@ const CommentListItem = ({
     error: voteError,
   } = useQuery({
     queryKey: ['comments', comment.id, 'my-vote'],
-    queryFn: () => selectMyVote(comment.post_id, comment.id, getToken),
+    queryFn: () => selectMyVote(comment.post_id, comment.id),
     staleTime: 1000 * 60,
     retry: 2,
     refetchOnWindowFocus: false,
@@ -143,7 +139,7 @@ const CommentListItem = ({
           gap: 14,
         }}
       >
-        {session?.user.id === comment.author_id.toString() && (
+        {authUser?.id === comment.author_id && (
           <Entypo onPress={() => removeComment()} name="trash" size={15} color="#737373" />
         )}
         <Octicons

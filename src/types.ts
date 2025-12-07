@@ -9,8 +9,8 @@ export type Post = {
   author_id: number
   subreddit_id: number | null
   media: PostMedia[]
-  // subreddit: Subreddit;
-  // user: User;
+  community: Subreddit
+  author: User
 }
 
 export type PostMedia = {
@@ -35,20 +35,23 @@ export type Comment = {
   content: string
   created_at: string
   vote_count: number
-  // user: User
+  author: User
   replies: Comment[]
 }
 
 export type Subreddit = {
-  id: number
+  community_id: number
   name: string
-  image: string
+  avatar: string | null
+  type: string
+  members_count: number
 }
 
 export type User = {
   id: number
-  name: string
-  image: string | null
+  email: string
+  full_name: string
+  avatar: string | null
 }
 
 export type SavedPost = {
@@ -56,4 +59,37 @@ export type SavedPost = {
   user_id: number
   post_id: number
   saved_at: string
+}
+
+export type Community = {
+  community_id: number
+  name: string
+  created_by: number
+  type_id: number
+  avatar: string
+  created_at: string
+  updated_at: string
+  communityType: CommunityType
+  members: number
+}
+
+export type CommunityType = {
+  type_id: number
+  type: string
+  description: string
+}
+
+export type CommunityMember = {
+  id: number
+  community_id: number
+  user_id: number
+  role: 'member' | 'admin' | 'moderator'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  joined_at: string
+}
+
+export type FactCheckResponse = {
+  claim: string
+  verdict: 'TRUE' | 'FALSE' | 'NEI'
+  explanation: string
 }

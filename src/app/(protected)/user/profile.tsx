@@ -1,16 +1,13 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { useAuth, useSession } from '@clerk/clerk-expo'
-import { useAuth as useAuthContext } from "../../../contexts/AuthContext"; 
+import { useAuth } from '../../../contexts/AuthContext'
 
 type TabType = 'Posts' | 'Comments' | 'About'
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<TabType>('Posts')
-  const { session } = useSession()
-  const { signOut } = useAuth();
-  const { setAuthUser } = useAuthContext();
+  const { signOut, setAuthUser, authUser } = useAuth()
 
   const tabs: TabType[] = ['Posts', 'Comments', 'About']
 
@@ -36,8 +33,8 @@ export default function Profile() {
   )
 
   const handleLogout = async () => {
-    await signOut();
-    setAuthUser(null);
+    await signOut()
+    setAuthUser(null)
   }
 
   return (
@@ -46,28 +43,31 @@ export default function Profile() {
         {/* Profile Header */}
         <View style={styles.header}>
           {/* Cover/Background */}
-          <View style={styles.coverImage} />
+          <View style={styles.coverImageView}>
+            <Image
+              source={require('../../../../assets/redditPersonalHome.png')}
+              style={styles.coverImage}
+            />
+          </View>
 
           {/* Profile Info */}
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarEmoji} onPress={() => handleLogout()}>🤖</Text>
-                </View>
+                <Image source={{ uri: authUser?.profile.avatar }} style={styles.avatarImage} />
               </View>
             </View>
 
             <View style={styles.profileInfo}>
               <View style={styles.nameRow}>
-                <Text style={styles.displayName}>{session?.user.fullName}</Text>
+                <Text style={styles.displayName}>{authUser?.profile.full_name}</Text>
                 <TouchableOpacity style={styles.editButton}>
                   <Text style={styles.editButtonText}>Edit</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.usernameRow}>
-                <Text style={styles.username}>{`u/${session?.user.emailAddresses[0]}`}</Text>
+                <Text style={styles.username}>{`u/${authUser?.email}`}</Text>
                 <Text style={styles.dot}>•</Text>
                 <TouchableOpacity style={styles.followersButton}>
                   <Text style={styles.followersText}>0 followers</Text>
@@ -170,9 +170,13 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#1A5A96',
   },
-  coverImage: {
+  coverImageView: {
     height: 100,
-    backgroundColor: '#2E5C8A',
+    // backgroundColor: '#2E5C8A',
+  },
+  coverImage: {
+    width: '100%',
+    height: 100,
   },
   profileSection: {
     paddingHorizontal: 16,
@@ -189,16 +193,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 4,
   },
-  avatarCircle: {
+  avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 44,
-    backgroundColor: '#FFB5C5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarEmoji: {
-    fontSize: 48,
+    borderRadius: 48,
   },
   profileInfo: {
     gap: 8,

@@ -14,8 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { AntDesign } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { insertComment } from '../../../services/commentsService'
-import { useAuth } from '@clerk/clerk-expo'
+import { insertComment } from '../../../apis/postService'
 
 export default function CommentTyping() {
   const [comment, setComment] = useState<string>('')
@@ -24,7 +23,6 @@ export default function CommentTyping() {
     title: string
     parent_id?: string
   }>()
-  const { getToken } = useAuth()
   const queryClient = useQueryClient()
 
   const { mutate: createComment, isPending } = useMutation({
@@ -33,14 +31,11 @@ export default function CommentTyping() {
         throw new Error('Comment not blank')
       }
 
-      return insertComment(
-        {
-          post_id: parseInt(id),
-          content: comment,
-          parent_id: parent_id ? parseInt(parent_id) : undefined,
-        },
-        getToken
-      )
+      return insertComment({
+        post_id: parseInt(id),
+        content: comment,
+        parent_comment_id: parent_id ? parseInt(parent_id) : undefined,
+      })
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['comments', { postId: id }] })

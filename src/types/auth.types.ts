@@ -1,5 +1,11 @@
 export interface AuthState {
-  user_id: number;
-  avatar: string;
-  email: string;
+  id: number
+  email: string
+  profile: {
+    id?: number
+    user_id?: number
+    full_name?: string
+    avatar: string
+    gender?: boolean
+  }
 }

@@ -18,10 +18,13 @@ import { router, Stack, useLocalSearchParams } from 'expo-router'
 
 import CommentListItem from '../../../components/CommentListItem'
 import PostListItem from '../../../components/PostListItem'
-import { deletePostById, fetchPostById } from '../../../services/postService'
-import { fetchComments, insertComment } from '../../../services/commentsService'
-
-import { useAuth, useSession } from '@clerk/clerk-expo'
+import {
+  deletePostById,
+  fetchComments,
+  fetchPostById,
+  insertComment,
+} from '../../../apis/postService'
+import { useAuth } from '../../../contexts/AuthContext'
 
 export default function DetailedPost() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -32,10 +35,9 @@ export default function DetailedPost() {
   // const inputRef = useRef<TextInput | null>(null)
 
   const insets = useSafeAreaInsets()
-  const { session } = useSession()
 
   const queryClient = useQueryClient()
-  const { getToken } = useAuth()
+  const { authUser } = useAuth()
 
   const {
     data: post,
@@ -43,16 +45,16 @@ export default function DetailedPost() {
     error,
   } = useQuery({
     queryKey: ['posts', id],
-    queryFn: () => fetchPostById(parseInt(id)),
+    queryFn: () => fetchPostById(Number(id)),
   })
 
   const { data: comments } = useQuery({
     queryKey: ['comments', { postId: id }],
-    queryFn: () => fetchComments(parseInt(id)),
+    queryFn: () => fetchComments(Number(id)),
   })
 
   const { mutate: remove } = useMutation({
-    mutationFn: () => deletePostById(parseInt(id)),
+    mutationFn: () => deletePostById(Number(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
       router.back()
@@ -64,11 +66,11 @@ export default function DetailedPost() {
 
   const { mutate: createComment } = useMutation({
     mutationFn: () =>
-      insertComment({ post_id: parseInt(id), content: comment, parent_id: replyToId }, getToken),
+      insertComment({ post_id: Number(id), content: comment, parent_comment_id: replyToId }),
     onSuccess: (data) => {
       setComment('')
       setReplyToId(undefined)
-      queryClient.invalidateQueries({ queryKey: ['comments', { postId: id }] })
+      queryClient.invalidateQueries({ queryKey: ['comments', { postId: Number(id) }] })
       queryClient.invalidateQueries({
         queryKey: ['comments', { parentId: replyToId }],
       })
@@ -108,7 +110,7 @@ export default function DetailedPost() {
         options={{
           headerRight: () => (
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              {session?.user.id === post.author_id.toString() && (
+              {authUser?.id === post.author_id && (
                 <Entypo onPress={() => remove()} name="trash" size={24} color="white" />
               )}
 

@@ -17,13 +17,10 @@ import { AntDesign, Feather } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 
-import { selectedGroupAtom } from '../../../atoms'
+import { selectedCommunityAtom } from '../../../atoms'
 import { useAtom } from 'jotai'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSupabase } from '../../../lib/supabase'
-import { uploadImage } from '../../../utils/supabaseImages'
-import { insertPost } from '../../../services/postService'
-import { useAuth } from '@clerk/clerk-expo'
+import { insertPost } from '../../../apis/postService'
 import { PostMedia } from '../../../types'
 import { isValidURL } from '../../../utils/verifyString'
 
@@ -35,16 +32,14 @@ export default function CreateScreen() {
   const [link, setLink] = useState<string>('')
   const [linkInput, setLinkInput] = useState<boolean>(false)
 
-  const [group, setGroup] = useAtom(selectedGroupAtom)
+  const [community, setCommunity] = useAtom(selectedCommunityAtom)
 
   const queryClient = useQueryClient()
-  const supabase = useSupabase()
-  const { getToken } = useAuth()
 
   const { mutate, isPending } = useMutation({
     mutationFn: (image: string | undefined) => {
-      if (!group) {
-        throw new Error('Please select a group')
+      if (!community) {
+        throw new Error('Please select a community')
       }
       if (!title) {
         throw new Error('Title is required')
@@ -59,9 +54,9 @@ export default function CreateScreen() {
         {
           title,
           content: bodyText,
-          media,
+          subreddit_id: community.community_id,
         },
-        getToken
+        { media_type: '', file: null }
       )
     },
     onSuccess: (data) => {
@@ -77,7 +72,8 @@ export default function CreateScreen() {
   })
 
   const onPostClick = async () => {
-    let imagePath = image ? await uploadImage(image, supabase) : undefined
+    // let imagePath = image ? await uploadImage(image, supabase) : undefined
+    let imagePath = undefined
 
     mutate(imagePath)
   }
@@ -85,7 +81,7 @@ export default function CreateScreen() {
   const goBack = () => {
     setTitle('')
     setBodyText('')
-    setGroup(null)
+    setCommunity(null)
     setImage(null)
     setVideo(null)
     router.back()
@@ -145,15 +141,19 @@ export default function CreateScreen() {
       >
         <ScrollView showsVerticalScrollIndicator={false} style={{ paddingVertical: 15 }}>
           {/* COMMUNITY SELECTOR */}
-          <Link href={'groupSelector'} asChild>
+          <Link href={'communitySelector'} asChild>
             <Pressable style={styles.communityContainer}>
-              {group ? (
+              {community ? (
                 <>
                   <Image
-                    source={{ uri: group.image || '' }}
+                    source={
+                      community.avatar
+                        ? { uri: community.avatar }
+                        : require('../../../../assets/header.png')
+                    }
                     style={{ width: 20, height: 20, borderRadius: 10 }}
                   />
-                  <Text style={{ fontWeight: '600' }}>{group.name}</Text>
+                  <Text style={{ fontWeight: '600' }}>{community.name}</Text>
                 </>
               ) : (
                 <>
