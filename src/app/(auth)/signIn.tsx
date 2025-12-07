@@ -1,4 +1,3 @@
-import { useSignIn } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
 import {
   Text,
@@ -10,47 +9,35 @@ import {
   StyleSheet,
 } from 'react-native'
 import React from 'react'
-import GoogleSignIn from '../../components/GoogleSignIn'
+// import GoogleSignIn from '../../components/GoogleSignIn'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function Page() {
-  const { signIn, setActive, isLoaded } = useSignIn()
   const router = useRouter()
-  const { setAuthUser } = useAuth();
+  const { signIn, fetchUserProfile } = useAuth()
   const [emailAddress, setEmailAddress] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [isLoading, setIsLoading] = React.useState(false)
 
   // Handle the submission of the sign-in form
   const onSignInPress = React.useCallback(async () => {
-    if (!isLoaded) return
+    if (isLoading) return
 
     // Start the sign-in process using the email and password provided
     try {
-      const signInAttempt = await signIn.create({
-        identifier: emailAddress,
-        password,
-      })
-      setAuthUser({
-        user_id: 1,
-        email: emailAddress,
-        avatar: ''
+      setIsLoading(true)
+      signIn({ email: emailAddress, password }).then(async () => {
+        await fetchUserProfile()
       })
       // If sign-in process is complete, set the created session as active
       // and redirect the user
-      if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId })
-        router.replace('/')
-      } else {
-        // If the status isn't complete, check why. User might need to
-        // complete further steps.
-        console.log(JSON.stringify(signInAttempt, null, 2))
-      }
+      router.replace('/')
     } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
       console.log(JSON.stringify(err, null, 2))
+    } finally {
+      setIsLoading(false)
     }
-  }, [isLoaded, emailAddress, password])
+  }, [isLoading, emailAddress, password])
 
   return (
     <KeyboardAvoidingView
@@ -86,7 +73,7 @@ export default function Page() {
         </Link>
       </View>
 
-      <GoogleSignIn />
+      {/* <GoogleSignIn /> */}
     </KeyboardAvoidingView>
   )
 }

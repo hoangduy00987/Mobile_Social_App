@@ -1,49 +1,39 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
+import { getAllNotifications } from '../../../apis/notificationService'
+import React, { useEffect } from 'react'
+
+interface EventMetadata {
+  actor: { userId: number; userName: string }
+  target?: { postId?: number; commentId?: number; ownerUserId?: number }
+  context?: { snippet?: string }
+  eventId?: string
+  eventType?: string
+  occurredAt?: string
+}
 
 interface Notification {
   id: string
+  userId: number
   type: 'post' | 'system'
-  icon?: string
-  iconBg?: string
   title: string
-  description: string
-  time: string
-  thumbnail?: string
+  body: string
+  metadata?: { evt: EventMetadata }
   isRead?: boolean
+  dedupeKey?: string
+  createdAt?: string
 }
 
 export default function InboxScreen() {
-  const notifications: Notification[] = [
-    {
-      id: '1',
-      type: 'post',
-      title: 'ios:',
-      description: 'Is It Still Possible To Revert Back To IOS 18',
-      time: '5h',
-      thumbnail: '🖥️',
-      isRead: false,
-    },
-    {
-      id: '2',
-      type: 'system',
-      icon: '🔥',
-      iconBg: '#000000',
-      title: 'A new beginning',
-      description: 'Congrats on your new streak! Click to learn more',
-      time: '1d',
-      isRead: true,
-    },
-    {
-      id: '3',
-      type: 'system',
-      icon: '🏆',
-      iconBg: '#000000',
-      title: 'Achievement unlocked!',
-      description: 'Check out your newest achievement',
-      time: '3d',
-      isRead: true,
-    },
-  ]
+  const [notifications, setNotifications] = React.useState<Notification[]>([])
+
+  const fetchNotifications = async () => {
+    const data = await getAllNotifications()
+    setNotifications(data.items || [])
+  }
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [])
 
   const renderNotificationItem = (notification: Notification) => {
     if (notification.type === 'post') {
@@ -55,14 +45,14 @@ export default function InboxScreen() {
           <View style={styles.postNotification}>
             <View style={styles.postContent}>
               <Text style={styles.postCommunity}>{notification.title}</Text>
-              <Text style={styles.postTitle}>{notification.description}</Text>
-              <Text style={styles.notificationTime}>{notification.time}</Text>
+              <Text style={styles.postTitle}>{notification.body}</Text>
+              <Text style={styles.notificationTime}>{notification.metadata?.evt.occurredAt}</Text>
             </View>
-            {notification.thumbnail && (
+            {/* {notification.thumbnail && (
               <View style={styles.postThumbnail}>
                 <Text style={styles.postThumbnailEmoji}>{notification.thumbnail}</Text>
               </View>
-            )}
+            )} */}
           </View>
         </TouchableOpacity>
       )
@@ -74,13 +64,13 @@ export default function InboxScreen() {
         style={[styles.notificationItem, notification.isRead && styles.notificationRead]}
       >
         <View style={styles.systemNotification}>
-          <View style={[styles.systemIcon, { backgroundColor: notification.iconBg || '#000' }]}>
+          {/* <View style={[styles.systemIcon, { backgroundColor: notification.iconBg || '#000' }]}>
             <Text style={styles.systemIconText}>{notification.icon}</Text>
-          </View>
+          </View> */}
           <View style={styles.systemContent}>
             <Text style={styles.systemTitle}>{notification.title}</Text>
-            <Text style={styles.systemDescription}>{notification.description}</Text>
-            <Text style={styles.notificationTime}>{notification.time}</Text>
+            <Text style={styles.systemDescription}>{notification.body}</Text>
+            <Text style={styles.notificationTime}>{notification.metadata?.evt.occurredAt}</Text>
           </View>
         </View>
       </TouchableOpacity>

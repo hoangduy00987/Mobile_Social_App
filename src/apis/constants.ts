@@ -1,0 +1,5 @@
+export const USER_SERVICE_URL = process.env.EXPO_PUBLIC_API_BASE_URL + '/users'
+export const POST_SERVICE_URL = process.env.EXPO_PUBLIC_API_BASE_URL + '/posts/api'
+export const COMMUNITY_SERVICE_URL = process.env.EXPO_PUBLIC_API_BASE_URL + '/communities/api'
+export const NOTIFICATION_SERVICE_URL = process.env.EXPO_PUBLIC_API_BASE_URL + '/notifications'
+export const AI_SERVICE_URL = process.env.EXPO_PUBLIC_API_BASE_URL + '/ai'

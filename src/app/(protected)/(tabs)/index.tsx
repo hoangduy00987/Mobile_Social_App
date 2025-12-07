@@ -1,7 +1,7 @@
 import { FlatList, ActivityIndicator, Text, Button } from 'react-native'
 import PostListItem from '../../../components/PostListItem'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { fetchPosts } from '../../../services/postService'
+import { fetchPosts } from '../../../apis/postService'
 
 export default function HomeScreen() {
   const {

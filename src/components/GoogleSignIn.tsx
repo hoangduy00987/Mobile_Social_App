@@ -20,7 +20,7 @@ export default function GoogleSignIn() {
     redirectUrl: Linking.createURL('/'),
   })
   const router = useRouter()
-  const { setAuthUser } = useAuth();
+  const { setAuthUser } = useAuth()
   const onGoogleSignInPress = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -46,12 +46,12 @@ export default function GoogleSignIn() {
         //     }
         //   },
         // })
-        setActive!({ session: createdSessionId });
-        setAuthUser({
-          user_id: 1,
-          email: 'nth0326zz@gmail.com',
-          avatar: ''
-        })
+        setActive!({ session: createdSessionId })
+        // setAuthUser({
+        //   id: 1,
+        //   email: 'nth0326zz@gmail.com',
+        //   profile: { full_name: '' }
+        // })
         router.replace('/')
       } else {
         setError('Google sign in incomplete. Please try again!')

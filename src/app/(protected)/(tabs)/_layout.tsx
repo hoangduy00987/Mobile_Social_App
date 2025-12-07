@@ -1,16 +1,14 @@
 import { Link, Tabs, useNavigation } from 'expo-router'
 import { AntDesign, Feather, Ionicons } from '@expo/vector-icons'
-import { useAuth, useSession } from '@clerk/clerk-expo'
 import * as SecureStore from 'expo-secure-store'
 import { Image, Pressable } from 'react-native'
+import { useAuth } from '../../../contexts/AuthContext'
 
 export default function TabLayout() {
   const navigation: any = useNavigation()
-  const { signOut } = useAuth()
-  const { session } = useSession()
+  const { signOut, authUser } = useAuth()
 
   const handleSignOut = async () => {
-    await SecureStore.deleteItemAsync('__clerk_client_jwt')
     signOut()
   }
 
@@ -20,10 +18,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: 'black',
 
         headerLeft: () => (
-          <Pressable
-            onPress={() => navigation.openDrawer()}
-            style={{ paddingLeft: 12 }}
-          >
+          <Pressable onPress={() => navigation.openDrawer()} style={{ paddingLeft: 12 }}>
             <AntDesign name="menu" size={22} color="black" />
           </Pressable>
         ),
@@ -32,7 +27,7 @@ export default function TabLayout() {
           <Link href="/user/profile" asChild>
             <Pressable>
               <Image
-                source={{ uri: session?.user.imageUrl }}
+                source={{ uri: authUser?.profile.avatar }}
                 style={{
                   width: 30,
                   height: 30,
@@ -45,7 +40,6 @@ export default function TabLayout() {
         ),
       }}
     >
-
       <Tabs.Screen
         name="index"
         options={{
@@ -69,9 +63,7 @@ export default function TabLayout() {
           title: 'Create',
           headerShown: false,
           tabBarStyle: { display: 'none' },
-          tabBarIcon: ({ color }) => (
-            <AntDesign name="plus" size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <AntDesign name="plus" size={24} color={color} />,
         }}
       />
 
@@ -92,7 +84,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Feather name="bell" size={24} color={color} />,
         }}
       />
-
     </Tabs>
   )
 }
